@@ -10,8 +10,7 @@ class ComparisonCompactor
     int contextLength
     String expected
     String actual
-    int prefixLength
-    int suffixLength
+
 
     new(int contextLength, String expected, String actual)
     {
@@ -26,9 +25,11 @@ class ComparisonCompactor
         var String compactActual = actual
         if (shouldBeCompacted())
         {
-            findCommonPrefixAndSuffix()
-            compactExpected = compact(expected)
-            compactActual = compact(actual)
+            val prefixLength = findCommonPrefix()
+            val suffixLength = findCommonSuffix(prefixLength)
+            
+            compactExpected = compact(expected, prefixLength, suffixLength)
+            compactActual = compact(actual, prefixLength, suffixLength)
         }
         return Assert.format(message, compactExpected, compactActual)
     }
@@ -43,17 +44,17 @@ class ComparisonCompactor
         return expected === null || actual === null || expected.equals(actual)
     }
 
-    def private void findCommonPrefixAndSuffix()
+    def private int findCommonSuffix(int prefixLength)
     {
-        findCommonPrefix()
-        suffixLength = 0
-        for (; !suffixOverlapsPrefix(); suffixLength++)
+        var suffixLength = 0
+        for (; !suffixOverlapsPrefix(prefixLength, suffixLength); suffixLength++)
         {
             if (charFromEnd(expected, suffixLength) !== charFromEnd(actual, suffixLength))
             {
-                return
+                return suffixLength
             }
         }
+        return suffixLength
     }
 
     def private char charFromEnd(String s, int i)
@@ -61,57 +62,65 @@ class ComparisonCompactor
         return s.charAt(s.length() - i - 1)
     }
 
-    def private boolean suffixOverlapsPrefix()
+    def private boolean suffixOverlapsPrefix(int prefixLength, int suffixLength)
     {
         return actual.length() - suffixLength <= prefixLength || expected.length() - suffixLength <= prefixLength
     }
 
-    def private void findCommonPrefix()
+    def private int findCommonPrefix()
     {
-        prefixLength = 0
+        var prefixLength = 0
         var int end = Math.min(expected.length(), actual.length())
         for (; prefixLength < end; prefixLength++)
         {
             if (expected.charAt(prefixLength) !== actual.charAt(prefixLength))
             {
-                return
+                return prefixLength
             }
         }
+        return prefixLength
     }
 
-    def private String compact(String s)
+    def private String compact(String s, int prefixLength, int suffixLength)
     {
-        return new StringBuilder().append(startingEllipsis()).append(startingContext()).append(DELTA_START).append(
-            delta(s)).append(DELTA_END).append(endingContext()).append(endingEllipsis()).toString()
+        return new StringBuilder()
+            .append(startingEllipsis(prefixLength))
+            .append(startingContext(prefixLength))
+            .append(DELTA_START)
+            .append(delta(s, prefixLength, suffixLength))
+            .append(DELTA_END)
+            .append(endingContext(suffixLength))
+            .append(endingEllipsis(suffixLength))
+            .toString()
     }
 
-    def private String startingEllipsis()
+    def private String startingEllipsis(int prefixLength)
     {
         return if (prefixLength > contextLength) ELLIPSIS else ""
     }
 
-    def private String startingContext()
+    def private String startingContext(int prefixLength)
     {
         var int contextStart = Math.max(0, prefixLength - contextLength)
         var int contextEnd = prefixLength
         return expected.substring(contextStart, contextEnd)
     }
 
-    def private String delta(String s)
+    def private String delta(String s, int prefixLength, int suffixLength)
     {
         var int deltaStart = prefixLength
         var int deltaEnd = s.length() - suffixLength
         return s.substring(deltaStart, deltaEnd)
     }
 
-    def private String endingContext()
+    def private String endingContext(int suffixLength)
     {
         var int contextStart = expected.length() - suffixLength
         var int contextEnd = Math.min(contextStart + contextLength, expected.length())
         return expected.substring(contextStart, contextEnd)
     }
 
-    def private String endingEllipsis()
+    def private String endingEllipsis(int suffixLength)
     {
         return (if (suffixLength > contextLength) ELLIPSIS else "" )
     }
