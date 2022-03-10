@@ -36,12 +36,7 @@ class ComparisonCompactor
 
     def private boolean shouldBeCompacted()
     {
-        return !shouldNotBeCompacted()
-    }
-
-    def private boolean shouldNotBeCompacted()
-    {
-        return expected === null || actual === null || expected.equals(actual)
+        return expected !== null && actual !== null && !expected.equals(actual)
     }
 
     def private int findCommonSuffix(int prefixLength)
@@ -84,21 +79,28 @@ class ComparisonCompactor
     def private String compact(String s, int prefixLength, int suffixLength)
     {
         return new StringBuilder()
-            .append(startingEllipsis(prefixLength))
+            .append(ellipsis(prefixLength))
             .append(startingContext(prefixLength))
             .append(DELTA_START)
             .append(delta(s, prefixLength, suffixLength))
             .append(DELTA_END)
             .append(endingContext(suffixLength))
-            .append(endingEllipsis(suffixLength))
+            .append(ellipsis(suffixLength))
             .toString()
     }
 
-    def private String startingEllipsis(int prefixLength)
+    def private String ellipsis(int suffixLength)
     {
-        return if (prefixLength > contextLength) ELLIPSIS else ""
+        if (suffixLength > contextLength) 
+        {
+            ELLIPSIS   
+        }
+        else
+        {
+            ""
+        }
     }
-
+    
     def private String startingContext(int prefixLength)
     {
         var int contextStart = Math.max(0, prefixLength - contextLength)
@@ -118,10 +120,5 @@ class ComparisonCompactor
         var int contextStart = expected.length() - suffixLength
         var int contextEnd = Math.min(contextStart + contextLength, expected.length())
         return expected.substring(contextStart, contextEnd)
-    }
-
-    def private String endingEllipsis(int suffixLength)
-    {
-        return (if (suffixLength > contextLength) ELLIPSIS else "" )
     }
 }
