@@ -1,0 +1,10 @@
+**/xtend-gen
+**/target
+**/bin
+.settings
+.classpath
+.project
+test.log
+*.bak
+log/
+tmp/*
